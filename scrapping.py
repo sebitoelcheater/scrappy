@@ -99,8 +99,14 @@ class MercadoPublicoScrapper(Scrapper):
 class Scrappa:
     def _get(self, link):
         # self._set_driver()
-        self.driver.get('about:blank')
         self.driver.stop_client()
+        try:
+            self.driver.get('about:blank')
+        except UnexpectedAlertPresentException as e:
+            try:
+                self.driver.switch_to.alert.accept()
+            except NoAlertPresentException:
+                pass
         try:
             self.driver.get(link)
             return self.driver.page_source
