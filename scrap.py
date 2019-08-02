@@ -8,8 +8,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-sys.path.append(os.path.abspath(os.path.join('..', '..', 'scrapping')))
-from scrapping.scrapping import Scrappa, MercantilScrapper, Link, Company, RawScrapped, MercadoPublicoScrapper, Person
+sys.path.append(os.path.abspath(os.path.join('..', 'scrapping')))
+from scrapping import Scrappa, MercantilScrapper, Link, Company, RawScrapped, MercadoPublicoScrapper, Person
 import platform
 import threading
 

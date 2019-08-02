@@ -1,0 +1,7 @@
+.requirements
+.python-version
+.idea/
+__pycache__
+.drim/
+scripts/
+geckodriver.log
