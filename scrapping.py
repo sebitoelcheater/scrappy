@@ -131,6 +131,9 @@ class MercadoPublicoScrapper(Scrapper):
     @classmethod
     def detail(cls, soup):
         dct = {}
+        sells = soup.select_one('#ventasHistoricas')
+        if sells:
+            dct['historical_sales'] = sells.text
         if soup.find('span', {'id': 'lblNombreFantasia'}):
             dct['name'] = get_text(soup.find('span', {'id': 'lblNombreFantasia'}))
         if soup.find('div', {'class': 'company-contact'}) is not None:

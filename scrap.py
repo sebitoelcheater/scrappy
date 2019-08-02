@@ -115,7 +115,7 @@ def download_companies(timeout=10):
 
 def fetch_mercadopublico_info(timeout=20):
     non_scrapeds = [str(id) for id in
-                    connection[DB]['companies'].find({'raws.source': {'$ne': 'mercadopublico.cl'}}).values_list('id')]
+                    [c['_id'] for c in connection[DB]['companies'].find({'raws.source': {'$ne': 'mercadopublico.cl'}})]]
     ngroups = 3
     threads = []
     for seed in range(ngroups):
@@ -157,12 +157,12 @@ def fetch_genealog_info(timeout=20):
 
 
 def update_with_mercadopublico(company_id, scrappa):
-    company = connection[DB]['companies'].find({'_id': company_id})
+    company = connection[DB]['companies'].find({'_id': company_id})[0]
     rut = company['rut']
     link = f"http://webportal.mercadopublico.cl/proveedor/{rut}"
     print(rut, link)
     scrapped = MercadoPublicoScrapper.detail(scrappa.soup(link))
-    raw = RawScrapped(link=link, data=scrapped, source='mercadopublico.cl')
+    raw = {'link': link, 'data': scrapped, 'source': 'mercadopublico.cl'}
     if scrapped in [None, '']:
         print(f'Scraping returned null')
         connection[DB]['companies'].update({'_id': rut}, {'$addToSet': {'raws': raw}})
