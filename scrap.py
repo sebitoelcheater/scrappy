@@ -14,12 +14,12 @@ import platform
 import threading
 
 print(platform.system())
-osx_ip = '192.168.74.105'
+osx_ip = os.environ.get('IP')
 
 if platform.system() == "Darwin":
-    mongoengine.connect('messero_scrapping', alias='default')
+    mongoengine.connect(os.environ.get('DB'), alias='default')
 else:
-    mongoengine.connect('messero_scrapping', alias='default', host=osx_ip, port=27017)
+    mongoengine.connect(os.environ.get('DB'), alias='default', host=osx_ip, port=27017)
 
 
 class MyThread(threading.Thread):
@@ -34,67 +34,8 @@ class MyThread(threading.Thread):
             self.scrapping_function(obj, self.scrappa)
 
 
-def download_directory(timeout=40):
-    mercantil_directorio_links = [
-        "https://www.mercantil.com/restaurantes/1502",
-        "https://www.mercantil.com/comida-rapida/5246",
-        "https://www.mercantil.com/banqueteros/248",
-        "https://www.mercantil.com/pastelerias/1316",
-        "https://www.mercantil.com/preparacion-de-comida/8182",
-        "https://www.mercantil.com/restaurantes-comidas-rapidas/3878",
-        "https://www.mercantil.com/restaurantes-comida-chilena/3509",
-        "https://www.mercantil.com/restaurantes-comida-japonesa/3515",
-        "https://www.mercantil.com/restaurantes-carnes-y-parrilladas/3502",
-        "https://www.mercantil.com/pizzas/2753",
-        "https://www.mercantil.com/restaurantes-comida-peruana/3517",
-        "https://www.mercantil.com/pescados-y-mariscos-congelados/4545",
-        "https://www.mercantil.com/restaurantes-comida-china/3510",
-        "https://www.mercantil.com/sandwiches/3019",
-        "https://www.mercantil.com/restaurantes-comida-internacional/3513",
-        "https://www.mercantil.com/fuentes-de-soda/2257",
-        "https://www.mercantil.com/restaurantes-pescados-y-mariscos/3518",
-        "https://www.mercantil.com/comidas-a-domicilio/3831",
-        "https://www.mercantil.com/colaciones/1883",
-        "https://www.mercantil.com/bares/833",
-        "https://www.mercantil.com/restaurantes-comida-italiana/3514",
-        "https://www.mercantil.com/tortas/3264",
-        "https://www.mercantil.com/gastronomia/7969",
-        "https://www.mercantil.com/comida-china/5251",
-        "https://www.mercantil.com/restaurantes-comida-espanola/3511",
-        "https://www.mercantil.com/parrilladas/3055",
-        "https://www.mercantil.com/restaurantes-peruanos/5269",
-        "https://www.mercantil.com/restaurantes-comida-arabe/3505",
-        "https://www.mercantil.com/alimentos-preparados/7951",
-        "https://www.mercantil.com/restaurantes-comida-americana/3504",
-        "https://www.mercantil.com/restaurantes-comida-francesa/3512",
-        "https://www.mercantil.com/postres/2795",
-        "https://www.mercantil.com/restaurantes-vegetarianos/3451",
-        "https://www.mercantil.com/restaurantes-autoservicios/4775",
-        "https://www.mercantil.com/alimentos-orientales/4344",
-        "https://www.mercantil.com/restaurantes-comida-mexicana/3516",
-        "https://www.mercantil.com/carne-envasada/7992",
-        "https://www.mercantil.com/restaurantes-comida-tailandesa/4854",
-        "https://www.mercantil.com/desayunos-a-domicilio/4583",
-        "https://www.mercantil.com/restaurantes-carnes/5255",
-        "https://www.mercantil.com/comidas-entrega-a-domicilio/5241",
-        "https://www.mercantil.com/boites/956",
-        "https://www.mercantil.com/restaurantes-comida-alemana/3503",
-        "https://www.mercantil.com/restaurantes-pollos-y-pavos/3840",
-        "https://www.mercantil.com/restaurantes-comida-argentina/3507",
-        "https://www.mercantil.com/articulos-para-reposteria/4706",
-        "https://www.mercantil.com/restaurantes-comida-hindu/4855",
-        "https://www.mercantil.com/restaurantes-comida-catalana/3506",
-        "https://www.mercantil.com/comida-china-a-domicilio/5250",
-        "https://www.mercantil.com/restaurantes-carnes-premium/5256",
-        "https://www.mercantil.com/restaurantes-comida-cubana/4947",
-        "https://www.mercantil.com/ensaladas-preparadas/5122",
-        "https://www.mercantil.com/tanguerias/3223",
-        "https://www.mercantil.com/restaurantes-comida-brasilera/3508",
-        "https://www.mercantil.com/restaurantes-comida-suiza/3866",
-        "https://www.mercantil.com/mazapanes/4287",
-        "https://www.mercantil.com/restaurantes-comida-vietnamita/4688",
-        "https://www.mercantil.com/restaurantes-comida-ecuatoriana/4755",
-    ]
+def download_directory(timeout=40, directory=None):
+    mercantil_directorio_links = directory or []
 
     chrome_options = webdriver.ChromeOptions()
     prefs = {'profile.managed_default_content_settings.images': 2}
@@ -181,6 +122,36 @@ def fetch_mercadopublico_info(timeout=20):
     return threads
 
 
+def fetch_genealog_info(timeout=20):
+    chrome_options = webdriver.ChromeOptions()
+    prefs = {'profile.managed_default_content_settings.images': 2}
+    chrome_options.add_experimental_option("prefs", prefs)
+    scrappa = Scrappa(timeout=timeout, browser=webdriver.Chrome, browser_args={'chrome_options': chrome_options})
+    repeated, inserted = 0, 0
+
+    scrappa._get('https://www.genealog.cl/Geneanexus/search')
+    search_input = scrappa.driver.find_element_by_name("s")
+    search_input.send_keys('76545968-0')
+    scrappa.driver.find_element_by_xpath('//*[@id="searchSubmitInitial"]/button').click()
+    WebDriverWait(scrappa.driver, timeout).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="results-content"]/tr[3]')))
+    soup = BeautifulSoup(scrappa.driver.page_source, 'lxml')
+    profile_link = soup.select_one('#results-content > tr.person.empresa > td.tdRut > a').attrs['href']
+    scrappa._get(profile_link)
+    WebDriverWait(scrappa.driver, timeout).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="OwnEvent_showContact"]/td/button')))
+    scrappa.driver.find_element_by_xpath('//*[@id="OwnEvent_showContact"]/td/button').click()
+    WebDriverWait(scrappa.driver, timeout).until(
+        EC.text_to_be_present_in_element((By.XPATH, '//*[@id="results-content"]/tr[8]/td[2]/a'), '@'))
+    soup = BeautifulSoup(scrappa.driver.page_source, 'lxml')
+    print(soup.select('#results-content > tr:nth-child(8) > td.parseOnAsk > span'))
+    print(soup.select('#results-content > tr:nth-child(8) > td.parseOnAsk'))
+    print(soup.select('#results-content > tr:nth-child(8) > td.parseOnAsk > a'))
+    WebDriverWait(scrappa.driver, timeout).until(
+        EC.text_to_be_present_in_element((By.XPATH, '//*[@id="results-content"]/tr[9]/td[2]/div[1]/a'), '56'))
+    print(soup.select('#results-content > tr:nth-child(9) > td.telefonos.parseOnAsk'))
+
+
 def update_with_mercadopublico(company_id, scrappa):
     company = Company.objects.get(id=company_id)
     rut = company.rut
@@ -217,5 +188,21 @@ def scrap():
     for t in threads_mercadopublico:
         t.join()
 
-# download_directory()
+
+# fetch_genealog_info()
+'''
+download_directory(directory=[
+    "https://www.mercantil.com/arriendo-de-maquinaria-para-construccion/1960",
+    "https://www.mercantil.com/arriendo-de-gruas-de-horquilla/176",
+    "https://www.mercantil.com/arriendo-de-camiones-pluma/5808",
+    "https://www.mercantil.com/arriendo-de-gruas-pluma/355",
+    "https://www.mercantil.com/arriendo-de-maquinaria-para-movimientos-de-tierra/1950",
+    "https://www.mercantil.com/arriendo-de-gruas/177",
+    "https://www.mercantil.com/arriendo-de-retroexcavadoras/9573",
+    "https://www.mercantil.com/arriendo-de-maquinaria-para-la-mineria/3098",
+    "https://www.mercantil.com/arriendo-de-camiones-grua/3862",
+    "https://www.mercantil.com/arriendo-de-minicargadores/6129",
+    "https://www.mercantil.com/arriendo-de-camiones/3573",
+])
+'''
 scrap()
