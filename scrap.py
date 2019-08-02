@@ -8,8 +8,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-sys.path.append(os.path.abspath(os.path.join('..', '..', 'scrapping')))
-from scrapping.scrapping import Scrappa, MercantilScrapper, Link, Company, RawScrapped, MercadoPublicoScrapper, Person
+path = os.path.abspath(os.path.join('.', 'scrapping'))
+print('path')
+print(path)
+sys.path.append(path)
+from scrapping import Scrappa, MercantilScrapper, Link, Company, RawScrapped, MercadoPublicoScrapper, Person
 import platform
 import threading
 
@@ -17,6 +20,7 @@ print(platform.system())
 osx_ip = '192.168.74.105'
 
 if platform.system() == "Darwin":
+    print(':D')
     mongoengine.connect('messero_scrapping', alias='default')
 else:
     mongoengine.connect('messero_scrapping', alias='default', host=osx_ip, port=27017)
@@ -36,66 +40,92 @@ class MyThread(threading.Thread):
 
 def download_directory(timeout=40):
     mercantil_directorio_links = [
-        "https://www.mercantil.com/restaurantes/1502",
-        "https://www.mercantil.com/comida-rapida/5246",
-        "https://www.mercantil.com/banqueteros/248",
-        "https://www.mercantil.com/pastelerias/1316",
-        "https://www.mercantil.com/preparacion-de-comida/8182",
-        "https://www.mercantil.com/restaurantes-comidas-rapidas/3878",
-        "https://www.mercantil.com/restaurantes-comida-chilena/3509",
-        "https://www.mercantil.com/restaurantes-comida-japonesa/3515",
-        "https://www.mercantil.com/restaurantes-carnes-y-parrilladas/3502",
-        "https://www.mercantil.com/pizzas/2753",
-        "https://www.mercantil.com/restaurantes-comida-peruana/3517",
-        "https://www.mercantil.com/pescados-y-mariscos-congelados/4545",
-        "https://www.mercantil.com/restaurantes-comida-china/3510",
-        "https://www.mercantil.com/sandwiches/3019",
-        "https://www.mercantil.com/restaurantes-comida-internacional/3513",
-        "https://www.mercantil.com/fuentes-de-soda/2257",
-        "https://www.mercantil.com/restaurantes-pescados-y-mariscos/3518",
-        "https://www.mercantil.com/comidas-a-domicilio/3831",
-        "https://www.mercantil.com/colaciones/1883",
-        "https://www.mercantil.com/bares/833",
-        "https://www.mercantil.com/restaurantes-comida-italiana/3514",
-        "https://www.mercantil.com/tortas/3264",
-        "https://www.mercantil.com/gastronomia/7969",
-        "https://www.mercantil.com/comida-china/5251",
-        "https://www.mercantil.com/restaurantes-comida-espanola/3511",
-        "https://www.mercantil.com/parrilladas/3055",
-        "https://www.mercantil.com/restaurantes-peruanos/5269",
-        "https://www.mercantil.com/restaurantes-comida-arabe/3505",
-        "https://www.mercantil.com/alimentos-preparados/7951",
-        "https://www.mercantil.com/restaurantes-comida-americana/3504",
-        "https://www.mercantil.com/restaurantes-comida-francesa/3512",
-        "https://www.mercantil.com/postres/2795",
-        "https://www.mercantil.com/restaurantes-vegetarianos/3451",
-        "https://www.mercantil.com/restaurantes-autoservicios/4775",
-        "https://www.mercantil.com/alimentos-orientales/4344",
-        "https://www.mercantil.com/restaurantes-comida-mexicana/3516",
-        "https://www.mercantil.com/carne-envasada/7992",
-        "https://www.mercantil.com/restaurantes-comida-tailandesa/4854",
-        "https://www.mercantil.com/desayunos-a-domicilio/4583",
-        "https://www.mercantil.com/restaurantes-carnes/5255",
-        "https://www.mercantil.com/comidas-entrega-a-domicilio/5241",
-        "https://www.mercantil.com/boites/956",
-        "https://www.mercantil.com/restaurantes-comida-alemana/3503",
-        "https://www.mercantil.com/restaurantes-pollos-y-pavos/3840",
-        "https://www.mercantil.com/restaurantes-comida-argentina/3507",
-        "https://www.mercantil.com/articulos-para-reposteria/4706",
-        "https://www.mercantil.com/restaurantes-comida-hindu/4855",
-        "https://www.mercantil.com/restaurantes-comida-catalana/3506",
-        "https://www.mercantil.com/comida-china-a-domicilio/5250",
-        "https://www.mercantil.com/restaurantes-carnes-premium/5256",
-        "https://www.mercantil.com/restaurantes-comida-cubana/4947",
-        "https://www.mercantil.com/ensaladas-preparadas/5122",
-        "https://www.mercantil.com/tanguerias/3223",
-        "https://www.mercantil.com/restaurantes-comida-brasilera/3508",
-        "https://www.mercantil.com/restaurantes-comida-suiza/3866",
-        "https://www.mercantil.com/mazapanes/4287",
-        "https://www.mercantil.com/restaurantes-comida-vietnamita/4688",
-        "https://www.mercantil.com/restaurantes-comida-ecuatoriana/4755",
+        "https://www.mercantil.com/medicos-centros-medicos/1882",
+        "https://www.mercantil.com/medicos/1205",
+        "https://www.mercantil.com/clinicas-veterinarias/1896",
+        "https://www.mercantil.com/dentistas-clinicas-dentales/4542",
+        "https://www.mercantil.com/psicologos/2588",
+        "https://www.mercantil.com/hospitales/995",
+        "https://www.mercantil.com/medicos-oftalmologia/4329",
+        "https://www.mercantil.com/medicos-ginecologia/4450",
+        "https://www.mercantil.com/medicos-psiquiatria/4466",
+        "https://www.mercantil.com/terapias-alternativas/4521",
+        "https://www.mercantil.com/casas-de-reposo/1825",
+        "https://www.mercantil.com/kinesiologos/2416",
+        "https://www.mercantil.com/medicos-pediatria/4465",
+        "https://www.mercantil.com/medicos-traumatologia-y-ortopedia/4471",
+        "https://www.mercantil.com/medicos-otorrinolaringologia/4327",
+        "https://www.mercantil.com/medicos-dermatologia-y-venereologia/4441",
+        "https://www.mercantil.com/medicos-medicina-general/4454",
+        "https://www.mercantil.com/medicos-urologia/4472",
+        "https://www.mercantil.com/medicos-cardiologia/4432",
+        "https://www.mercantil.com/kinesiologia/3960",
+        "https://www.mercantil.com/medicos-neurologia/4458",
+        "https://www.mercantil.com/medicos-radiologia/4467",
+        "https://www.mercantil.com/medicos-cirugia-plastica/4439",
+        "https://www.mercantil.com/psicologos-infanto-juvenil/2814",
+        "https://www.mercantil.com/psicopedagogos/2815",
+        "https://www.mercantil.com/medicos-endocrinologia/4446",
+        "https://www.mercantil.com/clinicas-psiquiatricas/3924",
+        "https://www.mercantil.com/medicos-reumatologia/8191",
+        "https://www.mercantil.com/medicos-medicina-interna/4456",
+        "https://www.mercantil.com/medicos-obesidad/4460",
+        "https://www.mercantil.com/centros-de-rehabilitacion/1294",
+        "https://www.mercantil.com/medicos-cirugia-general/4549",
+        "https://www.mercantil.com/medicos-gastroenterologia/4222",
+        "https://www.mercantil.com/medicos-cirugia-abdominal-y-digestiva/4434",
+        "https://www.mercantil.com/medicos-medicina-general-atencion-domiciliaria/4455",
+        "https://www.mercantil.com/medicos-neurocirugia/4457",
+        "https://www.mercantil.com/medicos-neurologia-infantil/4459",
+        "https://www.mercantil.com/acupuntura/71",
+        "https://www.mercantil.com/medicos-cirugia-vascular/4440",
+        "https://www.mercantil.com/medicos-ecografia/4443",
+        "https://www.mercantil.com/medicos-obstetricia/4462",
+        "https://www.mercantil.com/centros-de-dialisis/1721",
+        "https://www.mercantil.com/clinicas-oftalmologicas/3923",
+        "https://www.mercantil.com/medicos-geriatria/4449",
+        "https://www.mercantil.com/medicos-cirugia-infantil/4437",
+        "https://www.mercantil.com/implantes-dentales/5030",
+        "https://www.mercantil.com/medicos-diabetes-y-nutricion/4442",
+        "https://www.mercantil.com/homeopatia/989",
+        "https://www.mercantil.com/medicos-psiquiatria-infantil-y-adolescentes/4741",
+        "https://www.mercantil.com/servicios-de-asistencia/1849",
+        "https://www.mercantil.com/medicos-cancerologia/4431",
+        "https://www.mercantil.com/medicos-endocrinologia-infantil/4447",
+        "https://www.mercantil.com/medicos-broncopulmonares-y-tuberculosis/4430",
+        "https://www.mercantil.com/medicos-medicina-fisica-y-rehabilitacion/4453",
+        "https://www.mercantil.com/medicos-sexologia/4469",
+        "https://www.mercantil.com/quiropractica/4734",
+        "https://www.mercantil.com/medicos-cirugia-de-la-mama/4436",
+        "https://www.mercantil.com/medicina-natural/4426",
+        "https://www.mercantil.com/medicos-electroencefalografia/4550",
+        "https://www.mercantil.com/medicos-varices-ulceras-varicosas-y-hemorroides/4473",
+        "https://www.mercantil.com/medicos-cardiologia-infantil/4433",
+        "https://www.mercantil.com/centros-naturistas/1307",
+        "https://www.mercantil.com/vacunatorios/4714",
+        "https://www.mercantil.com/clinicas-cirugia-plastica/3671",
+        "https://www.mercantil.com/medicos-cirugia-ortopedica-y-traumatologia-infantil/4438",
+        "https://www.mercantil.com/medicos-endoscopia/4448",
+        "https://www.mercantil.com/urgencias-medicas/3299",
+        "https://www.mercantil.com/ecotomografias/2161",
+        "https://www.mercantil.com/medicos-cirugia-cardiovascular/4435",
+        "https://www.mercantil.com/medicos-ginecologia-infantil/4551",
+        "https://www.mercantil.com/hospitalizacion-domiciliaria/4415",
+        "https://www.mercantil.com/kinesiologia-infantil/4670",
+        "https://www.mercantil.com/medicos-medicina-nuclear/4684",
+        "https://www.mercantil.com/medicos-inmunologia/4658",
+        "https://www.mercantil.com/apiterapia/4637",
+        "https://www.mercantil.com/medicos-homeopatia/4721",
+        "https://www.mercantil.com/medicos-otoneurologia/4653",
+        "https://www.mercantil.com/matronas/2589",
+        "https://www.mercantil.com/medicos-toxicologia/4470",
+        "https://www.mercantil.com/medicos-electrocardiografia/4444",
+        "https://www.mercantil.com/medicos-medicina-del-dolor-y-paliativa/4452",
+        "https://www.mercantil.com/medicos-alcoholismo/4666",
+        "https://www.mercantil.com/medicos-medicina-del-sueno/4738",
+        "https://www.mercantil.com/centros-de-ejercicios-sin-esfuerzo/2410",
+        "https://www.mercantil.com/dietistas/1748",
     ]
-
     chrome_options = webdriver.ChromeOptions()
     prefs = {'profile.managed_default_content_settings.images': 2}
     chrome_options.add_experimental_option("prefs", prefs)
@@ -103,6 +133,7 @@ def download_directory(timeout=40):
     repeated, inserted = 0, 0
 
     for md_link in mercantil_directorio_links:
+        print(md_link)
         scrappa._get(md_link)
         myElem = WebDriverWait(scrappa.driver, timeout).until(
             EC.presence_of_element_located((By.CLASS_NAME, 'empresa1')))
