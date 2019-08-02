@@ -14,12 +14,17 @@ import platform
 import threading
 
 print(platform.system())
-osx_ip = os.environ.get('IP')
+IP = os.environ.get('IP')
+DB = os.environ.get('DB')
 
 if platform.system() == "Darwin":
-    mongoengine.connect(os.environ.get('DB'), alias='default')
+    connection = mongoengine.connect(DB, alias='default')
 else:
-    mongoengine.connect(os.environ.get('DB'), alias='default', host=osx_ip, port=27017)
+    connection = mongoengine.connect(DB, alias='default', host=IP, port=27017)
+
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 
 class MyThread(threading.Thread):
