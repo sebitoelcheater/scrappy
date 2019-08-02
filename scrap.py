@@ -75,7 +75,9 @@ def download_company_from_mercantil(link, scrappa):
     raw = RawScrapped(link=link.link, data=scrapped, source='mercantil.com')
     print(scrapped['rut'])
     link.update(set__data__rut=scrapped['rut'])
-    if Company.objects.filter(rut=scrapped['rut']).count() > 0:
+    company_query = Company.objects.filter(rut=scrapped['rut'])
+    if company_query.count() > 0:
+        company_query[0].update(push__raws=raw)
         print(f'RUT {scrapped["rut"]} already in database: {link.link}')
         return
         # raise AssertionError(f'RUT {scrapped["rut"]} already in database')
