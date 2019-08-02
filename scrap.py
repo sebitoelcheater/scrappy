@@ -188,6 +188,62 @@ def update_with_mercadopublico(company_id, scrappa):
     )
 
 
+def fetch_areas(scrappa):
+    areas = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17, 19, 1265, 1267, 1268, 1269, 1270, 1428]
+    url = lambda area: f'https://www.mercantil.com/areas.aspx?area_code={area}'
+    for area in areas:
+        exists = connection[DB]['areas'].find({'_id': area}).count() > 0
+        if not exists:
+            soup = scrappa.soup(url(area))
+            data = MercantilScrapper.area(soup)
+            data['_id'] = area
+            connection[DB]['areas'].update({'_id': data['_id']}, data, True)
+
+
+def fetch_subareas(scrappa, codes=None):
+    url = lambda code: f"https://www.mercantil.com/sareas.aspx?lang=esp&area_code={code}"
+    if codes is None:
+        areas = connection[DB]['areas'].find()
+        sareas = [[[sa for sa in g['sub_areas']] for g in area['groups']] for area in areas]
+        sareas = flatten(flatten(sareas))
+        codes = [sarea['code'] for sarea in sareas]
+
+    def get_sarea(code):
+        exists = connection[DB]['sub_areas'].find({'_id': code}).count() > 0
+        if not exists:
+            soup = scrappa.soup(url(code))
+            data = MercantilScrapper.sub_area(soup)
+            data['_id'] = code
+            connection[DB]['sub_areas'].update({'_id': data['_id']}, data, True)
+
+    for code in codes:
+        get_sarea(code)
+
+
+def fetch_directories(scrappa, subarea_codes=None):
+    repeated, inserted, timeout = 0, 0, 30
+    if subarea_codes is None:
+        sub_areas = connection[DB]['sub_areas'].find()
+    else:
+        sub_areas = connection[DB]['sub_areas'].find({'_id': {'$in': [str(s) for s in subarea_codes]}})
+    directory_urls = [[di['link'] for di in sa['directories']] for sa in sub_areas]
+    directory_urls = flatten(directory_urls)
+
+    for link in directory_urls:
+        exists = connection[DB]['directories'].find({'_id': link}).count() > 0
+        if not exists:
+            scrappa._get(link)
+            WebDriverWait(scrappa.driver, timeout).until(EC.presence_of_element_located((By.CLASS_NAME, 'empresa1')))
+            soup = BeautifulSoup(scrappa.driver.page_source, 'lxml')
+            links = MercantilScrapper.list(soup)
+            data = {
+                'name': soup.select_one('#titsup').text,
+                '_id': link,
+                'companies': links,
+            }
+            connection[DB]['directories'].update({'_id': data['_id']}, data, True)
+
+
 def scrap():
     threads_mercantil = download_companies(30)
     threads_mercadopublico = fetch_mercadopublico_info(30)

@@ -66,6 +66,44 @@ class MercantilScrapper(Scrapper):
         return dct
 
     @classmethod
+    def area(cls, soup):
+        host = 'https://www.mercantil.com'
+        groups_soup = soup.select('#Contenido_selsubarea > div')
+        groups = []
+        for group_soup in groups_soup:
+            group = {'name': group_soup.find('p').text, 'sub_areas': []}
+            for sarea_soup in group_soup.find_all('a'):
+                sarea = {
+                    'name': sarea_soup.text,
+                    'code': sarea_soup.attrs['href'].split('=')[-1],
+                    'link': f"{host}/{sarea_soup.attrs['href']}"
+                }
+                group['sub_areas'].append(sarea)
+            groups.append(group)
+        dct = {
+            'name': soup.select_one('#Contenido_areaname').text.replace('  ', ''),
+            'groups': groups
+        }
+        return dct
+
+    @classmethod
+    def sub_area(cls, soup):
+        directory_soups = soup.select('#selativities > div')
+        host = 'https://www.mercantil.com'
+        directories = []
+        for directory_soup in directory_soups:
+            a = directory_soup.find('a')
+            directories.append({
+                'link': f"{host}{a.attrs['href']}",
+                'name': a.text
+            })
+        dct = {
+            'name': soup.select_one('#titarea').text.replace('  ', ''),
+            'directories': directories
+        }
+        return dct
+
+    @classmethod
     def list(cls, soup):
         companies = []
         title = soup.find('a', {'id': 'titsup'})
