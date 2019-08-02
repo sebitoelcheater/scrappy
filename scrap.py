@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 sys.path.append(os.path.abspath(os.path.join('..', 'scrapping')))
-from scrapping import Scrappa, MercantilScrapper, Link, Company, RawScrapped, MercadoPublicoScrapper, Person
+from scrapping import Scrappa, MercantilScrapper, Link, RawScrapped, MercadoPublicoScrapper, Person
 import platform
 import threading
 
@@ -70,34 +70,36 @@ def download_directory(timeout=40, directory=None):
 
 
 def download_company_from_mercantil(link, scrappa):
-    print(link.link)
-    if Company.objects.filter(raws__link__contains=link.link).count() > 0:
+    print(link)
+    if connection[DB]['companies'].find({'raws.link': link}).count() > 0:
         return
-    scrapped = MercantilScrapper.detail(scrappa.soup(link.link))
+    scrapped = MercantilScrapper.detail(scrappa.soup(link))
     if scrapped in [None, ''] or scrapped['rut'] in [None, '']:
         print('Scrapping failed')
         return
-    raw = RawScrapped(link=link.link, data=scrapped, source='mercantil.com')
+    raw = {'link': link, 'data': scrapped, 'source': 'mercantil.com'}
     print(scrapped['rut'])
-    link.update(set__data__rut=scrapped['rut'])
-    company_query = Company.objects.filter(rut=scrapped['rut'])
+    company_query = connection[DB]['companies'].find({'_id': scrapped['rut']})
     if company_query.count() > 0:
-        company_query[0].update(push__raws=raw)
-        print(f'RUT {scrapped["rut"]} already in database: {link.link}')
+        connection[DB]['companies'].update({'_id': scrapped['rut']}, {'$push': {'raws': raw}})
+        print(f'RUT {scrapped["rut"]} already in database: {link}')
         return
         # raise AssertionError(f'RUT {scrapped["rut"]} already in database')
     else:
         treated_scrapped = copy.deepcopy(scrapped)
         treated_scrapped['addresses'] = [treated_scrapped.pop('address')]
-        Company.objects.create(raws=[raw], **treated_scrapped, projects=['cargoo'])
+        treated_scrapped['raws'] = [raw]
+        treated_scrapped['_id'] = treated_scrapped['rut']
+        connection[DB]['companies'].insert(treated_scrapped)
 
 
 def download_companies(timeout=10):
     chrome_options = webdriver.ChromeOptions()
     prefs = {'profile.managed_default_content_settings.images': 2}
     chrome_options.add_experimental_option("prefs", prefs)
-    links = Link.objects.all()
-    ngroups = 4
+    links = [[f"{c['host']}{c['link']}" for c in d['companies']] for d in connection[DB]['directories'].find()]
+    links = flatten(links)
+    ngroups = 3
     threads = []
     for seed in range(ngroups):
         group = (links[i] for i in range(seed, len(links), ngroups))
@@ -111,15 +113,10 @@ def download_companies(timeout=10):
     return threads
 
 
-def non_scraped_companies():
-    while Company.objects.filter(raws__source__ne='mercadopublico.cl').count() > 0:
-        company = Company.objects.filter(raws__source__ne='mercadopublico.cl')[0]
-        yield company
-
-
 def fetch_mercadopublico_info(timeout=20):
-    non_scrapeds = [str(id) for id in Company.objects.filter(raws__source__ne='mercadopublico.cl').values_list('id')]
-    ngroups = 4
+    non_scrapeds = [str(id) for id in
+                    connection[DB]['companies'].find({'raws.source': {'$ne': 'mercadopublico.cl'}}).values_list('id')]
+    ngroups = 3
     threads = []
     for seed in range(ngroups):
         group = [non_scrapeds[i] for i in range(seed, len(non_scrapeds), ngroups)]
@@ -160,28 +157,34 @@ def fetch_genealog_info(timeout=20):
 
 
 def update_with_mercadopublico(company_id, scrappa):
-    company = Company.objects.get(id=company_id)
-    rut = company.rut
+    company = connection[DB]['companies'].find({'_id': company_id})
+    rut = company['rut']
     link = f"http://webportal.mercadopublico.cl/proveedor/{rut}"
     print(rut, link)
     scrapped = MercadoPublicoScrapper.detail(scrappa.soup(link))
     raw = RawScrapped(link=link, data=scrapped, source='mercadopublico.cl')
     if scrapped in [None, '']:
         print(f'Scraping returned null')
-        company.update(add_to_set__raws=raw, add_to_set__projects='cargoo')
+        connection[DB]['companies'].update({'_id': rut}, {'$addToSet': {'raws': raw}})
         return
     if scrapped['rut'] != rut:
         raise AssertionError(f'rut {scrapped["rut"]} from scraped page and {rut} from database do not match.')
     treated_scrapped = copy.deepcopy(scrapped)
     print(rut, treated_scrapped['rut'])
-    company.update(
-        add_to_set__emails=treated_scrapped.pop('email'),
-        add_to_set__phones=treated_scrapped.pop('phone'),
-        add_to_set__addresses=treated_scrapped.pop('address'),
-        set__person=Person(name=treated_scrapped.pop('contact_name')),
-        add_to_set__raws=raw,
-        add_to_set__projects='cargoo',
-        **treated_scrapped
+    connection[DB]['companies'].update(
+        {'_id': rut},
+        {
+            '$addToSet': {
+                'emails': treated_scrapped.pop('email'),
+                'phones': treated_scrapped.pop('phone'),
+                'addresses': treated_scrapped.pop('address'),
+                'raws': raw,
+            },
+            '$set': {
+                'person': {'name': treated_scrapped.pop('contact_name')},
+                **treated_scrapped
+            }
+        },
     )
 
 

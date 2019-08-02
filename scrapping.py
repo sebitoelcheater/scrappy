@@ -41,7 +41,22 @@ class MercantilScrapper(Scrapper):
             'address': ", ".join(s.text for s in details.find('div', {'id': 'address'}).findAll('span')),
             'phones': [a.text for a in details.find('div', {'id': 'phon_phones'}).findAll('a')],
             'categories': [{'link': f"{host}{a.attrs['href']}", 'name': a.text} for a in categories],
+            'description': soup.select_one('#n_empresa') and soup.select_one('#n_empresa').text,
+            'contacts': [s.text for s in soup.select('.contacto_acordeon > p > strong')],
+            'location': {
+                'latitude': soup.select_one('[itemprop=latitude]').attrs['content'],
+                'longitude': soup.select_one('[itemprop=longitude]').attrs['content']
+            },
         }
+        try:
+            latitude = soup.select_one('[itemprop=latitude]').attrs['content']
+            longitude = soup.select_one('[itemprop=longitude]').attrs['content']
+            dct['location'] = {
+                'latitude': latitude,
+                'longitude': longitude,
+            }
+        except:
+            pass
         if details.find('span', {'itemprop': "url"}):
             dct['web'] = details.find('span', {'itemprop': "url"}).find('a').attrs['href']
         if soup.find('div', {'id': "qty_per"}):
