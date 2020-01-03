@@ -43,10 +43,6 @@ class MercantilScrapper(Scrapper):
             'categories': [{'link': f"{host}{a.attrs['href']}", 'name': a.text} for a in categories],
             'description': soup.select_one('#n_empresa') and soup.select_one('#n_empresa').text,
             'contacts': [s.text for s in soup.select('.contacto_acordeon > p > strong')],
-            'location': {
-                'latitude': soup.select_one('[itemprop=latitude]').attrs['content'],
-                'longitude': soup.select_one('[itemprop=longitude]').attrs['content']
-            },
         }
         try:
             latitude = soup.select_one('[itemprop=latitude]').attrs['content']
@@ -147,6 +143,8 @@ class MercadoPublicoScrapper(Scrapper):
             dct['business_name'] = get_text(soup.find('span', {'id': 'lblRazonSocial'}))
         if soup.find('div', {'class': 'company-description'}) is not None:
             dct['description'] = get_text(soup.find('span', {'id': 'lblDescripcionEmpresa'}))
+        if soup.select_one('#lblLinkSitioWeb'):
+            dct['web'] = soup.select_one('#lblLinkSitioWeb').attrs['href']
         if len(dct) == 0:
             return
         return dct
