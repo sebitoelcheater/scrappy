@@ -1,20 +1,20 @@
 import copy
 import sys, os
 from time import sleep
-
 import mongoengine
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementNotVisibleException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-
-sys.path.append(os.path.abspath(os.path.join('..', 'scrapping')))
-from scrapping import Scrappa, MercantilScrapper, Link, RawScrapped, MercadoPublicoScrapper, Person
+from libs.scrappa import Scrappa
+from libs.scrappers.mercadopublico_scrapper import MercadoPublicoScrapper
+from libs.scrappers.mercantil_scrapper import MercantilScrapper
 import platform
 import threading
 
+sys.path.append(os.path.abspath(os.path.join('..', 'scrapping')))
 print(platform.system())
 IP = os.environ.get('IP')
 DB = os.environ.get('DB')
@@ -59,10 +59,10 @@ def download_directory(timeout=40, directory=None):
         for link in links:
             print(f"{link['host']}{link['link']}")
             try:
-                Link.objects.create(
-                    link=f"{link['host']}{link['link']}", name=link['name'], host=link['host'],
-                    data={'category': link['category'], 'directory': f"{link['host']}{link['directory']}"}
-                )
+                connection[DB]['links'].create_one({
+                    'link': f"{link['host']}{link['link']}", 'name': link['name'], 'host': link['host'],
+                    'data': {'category': link['category'], 'directory': f"{link['host']}{link['directory']}"}
+                })
                 inserted += 1
             except mongoengine.NotUniqueError as e:
                 repeated += 1
@@ -175,7 +175,8 @@ def update_with_genealog(rut, scrappa, timeout=20):
         print(f'{rut}: TimeoutException (click in search button)')
         return
     try:
-        WebDriverWait(scrappa.driver, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#time_elapsed_secs b')))
+        WebDriverWait(scrappa.driver, timeout).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '#time_elapsed_secs b')))
     except TimeoutException as e:
         print(f'{rut}: No results ("#time_elapsed_secs b" not found)')
         return
@@ -187,7 +188,7 @@ def update_with_genealog(rut, scrappa, timeout=20):
     scrappa._get(profile_link)
     ADDITIONAL_INFO = True
     try:
-        #WebDriverWait(scrappa.driver, timeout).until(
+        # WebDriverWait(scrappa.driver, timeout).until(
         #    EC.presence_of_element_located((By.CSS_SELECTOR, '#OwnEvent_showContact > td > button')))
         button = False
         while (not button) or button.is_displayed():
@@ -570,8 +571,8 @@ def scrap():
     # for t in threads_mercantil:
     #    t.join()
     # Wait for all threads to complete
-    #threads_genealog = fetch_genealog_info(companies, 30)
-    #for t in threads_genealog:
+    # threads_genealog = fetch_genealog_info(companies, 30)
+    # for t in threads_genealog:
     #    t.join()
 
     threads_mercadopublico = fetch_mercadopublico_info(companies, 5)
