@@ -5,3 +5,4 @@ __pycache__
 .drim/
 scripts/
 geckodriver.log
+**.DS_Store
