@@ -1,10 +1,13 @@
+import json
+import re
 from bs4 import BeautifulSoup
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.wait import WebDriverWait
+from hammock import Hammock
 from libs.spider import Spider
+import js2py
+import base64
+
+with open('libs/mercantil.js', encoding='utf8') as file:
+    javascript = "".join(file)
 
 
 class GenealogSpider(Spider):
@@ -12,35 +15,51 @@ class GenealogSpider(Spider):
         super(GenealogSpider, self).__init__(*args, **kwargs)
         self.ruts = ruts
 
+    def get_company_link(self, rut):
+        api = Hammock('https://www.genealog.cl/Geneanexus/search')
+        request = api.POST(
+            headers={'content-type': 'application/x-www-form-urlencoded'},
+            data={"value": rut}
+        )
+        if request.status_code != 200:
+            return
+        search = re.search("var result = ({[^;]*})", request.text)
+        if search is None:
+            return
+        data = json.loads(search.group(1))
+        if data['content'] == []:
+            return
+        return js2py.eval_js(
+            f"{javascript}setRegex({json.dumps(data['regex'])});getRutLink({json.dumps(data['content'])})"
+        )
+
+    def fetch_link(self, url):
+        api = Hammock(url)
+        response = api.GET()
+        return response.text
+
+    def decode_content(self, soup):
+        obj = {}
+        for item in soup.select('.parseOnAsk'):
+            obj["_".join(item.attrs['class'])] = []
+            for stripped_string in item.stripped_strings:
+                decoded = base64.b64decode(stripped_string).decode('UTF-8')
+                obj["_".join(item.attrs['class'])].append(str(BeautifulSoup(decoded)))
+        return obj
+
     def search(self, rut):
-        browser = self.browser
-        browser._get('https://www.genealog.cl/Geneanexus/search')
-        try:
-            WebDriverWait(browser.driver, 120).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '#search-form input[name=s]'))
-            )
-            browser.driver.find_element_by_css_selector('#search-form input[name=s]').send_keys(rut + Keys.RETURN)
-            WebDriverWait(browser.driver, 120).until(
-                EC.invisibility_of_element((By.CSS_SELECTOR, '#progress'))
-            )
-        except TimeoutException:
-            print('retrying', rut)
-            self.browser._reload()
-            return self.search(rut)
-        a_result_element = self.browser.get_soup().select_one('#results-content > tr.person > td.tdRut > a')
-        if a_result_element is None:
+        url = self.get_company_link(rut)
+        if url is None:
             return None
-        url = a_result_element.attrs['href']
-        browser._get(url)
-        if self.browser.get_soup().select_one('#OwnEvent_showContact > td > button') is not None:
-            browser.driver.find_element_by_css_selector('#OwnEvent_showContact > td > button').click()
-        raw = self.extract_information()
+        content = self.fetch_link(url)
+        soup = BeautifulSoup(content)
+        raw_decoded = self.decode_content(soup)
+        raw = self.extract_information(soup)
         if raw is None:
             return None
-        return {'data': raw, 'source': 'genealog', 'url': url}
+        return {'data': {**raw, **raw_decoded}, 'source': 'genealog', 'url': url}
 
-    def extract_information(self):
-        soup = BeautifulSoup(self.browser.driver.page_source, 'lxml')
+    def extract_information(self, soup):
         table = soup.select_one('#results-content')
         if table is None:
             return None

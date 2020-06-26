@@ -4,6 +4,7 @@ from mongoengine import connect
 from pydash import py_ as _
 from libs.refiners.genealog_refiner import GenealogRefiner
 from libs.refiners.mercantil_refiner import MercantilRefiner
+from libs.threadsafe import threadsafe_generator
 from libs.utils import create_and_run_mercantil_spider, create_and_run_genealog_spider, map_key, id_generator
 
 DB_NAME = 'scrappy'
@@ -13,7 +14,7 @@ else:
     connection = connect(DB_NAME, alias='default', host='', port=27017)
 
 
-def run_spiders():
+def run_genealog_spiders(use_ruts_file=False):
     company_filter = {
         '$or': [
             {'economic_heading.id': 'F'},
@@ -21,32 +22,46 @@ def run_spiders():
             {'economic_sub_heading.id': {'$in': ['771', '773', '829']}}
         ]
     }
+    genealog_col = connection[DB_NAME]['sii_companies'].find({
+        **{'raws.genealog': {'$exists': False}},
+        **company_filter
+    })
+
     def genealog_collection():
-        items = connection[DB_NAME]['sii_companies'].find({
-            **{'raws.genealog': {'$exists': False}},
-            **company_filter
-        }).limit(5000)
+        items = genealog_col.limit(5000)
         while items.count() > 0:
             for item in items:
                 yield item
-            items = connection[DB_NAME]['sii_companies'].find({
-                **{'raws.genealog': {'$exists': False}},
-                **company_filter
-            }).limit(5000)
-    ruts_genealog = map_key(genealog_collection(), 'rut', connection[DB_NAME]['sii_companies'].count())
+            items = genealog_col.limit(5000)
+
+    ruts_genealog = map_key(genealog_collection(), 'rut', genealog_col.count())
     threads = []
-    for i in range(10):
+
+    @threadsafe_generator
+    def genealog_ruts():
+        with open('fixtures/ruts.txt') as file:
+            for line in file:
+                yield line.replace('\n', '')
+    if use_ruts_file:
+        ruts_genealog = genealog_ruts()
+
+    for i in range(1):
         thread = Thread(target=create_and_run_genealog_spider,
                         args=(ruts_genealog, connection[DB_NAME]['sii_companies']))
         threads.append(thread)
         thread.start()
-    for i in range(10):
+    return threads
+
+
+def run_mercantil_spiders():
+    threads = []
+    for i in range(0):
         ids = id_generator(range(i * 60000 + 1, (i + 1) * 60000 + 1))
         thread = Thread(target=create_and_run_mercantil_spider,
                         args=(ids, connection[DB_NAME]))
         threads.append(thread)
         thread.start()
-    [t.join() for t in threads]
+    return threads
 
 
 def run_genealog_refiner():
@@ -82,7 +97,8 @@ def run_mercantil_refiner():
 
 
 def print_contacts():
-    for company in connection[DB_NAME]['sii_companies'].find({'contacts.emails': {'$exists': True}, 'contacted': {'$exists': False}}):
+    for company in connection[DB_NAME]['sii_companies'].find(
+            {'contacts.emails': {'$exists': True}, 'contacted': {'$exists': False}}):
         for contact in _.get(company, 'contacts', []):
             if 'emails' in contact:
                 print(';'.join([
@@ -100,6 +116,13 @@ def print_contacts():
                     ', '.join(_.get(contact, 'emails', [])),
                     ', '.join(_.get(contact, 'phones', [])),
                 ]))
+
+
+def run_spiders():
+    threads = []
+    threads += run_genealog_spiders(True)
+    # threads += run_mercantil_spiders()
+    [t.join() for t in threads]
 
 
 if __name__ == '__main__':

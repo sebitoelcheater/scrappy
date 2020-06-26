@@ -35,7 +35,7 @@ def create_and_run_mercantil_spider(ids, db):
 
 def create_and_run_genealog_spider(ruts, collection):
     from libs.spiders.genealog_spider import GenealogSpider
-    spider = GenealogSpider(ruts, Scrappa(timeout=20, whitelist_domains=['ajax.cloudflare.com', 'www.genealog.cl']))
+    spider = GenealogSpider(ruts)
     for rut, data in spider.run():
         collection.update_one(
             {'rut': rut},
