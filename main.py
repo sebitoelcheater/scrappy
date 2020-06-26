@@ -47,7 +47,7 @@ def run_genealog_spiders(use_ruts_file=False):
 
     for i in range(1):
         thread = Thread(target=create_and_run_genealog_spider,
-                        args=(ruts_genealog, connection[DB_NAME]['sii_companies']))
+                        args=(ruts_genealog, connection[DB_NAME]['genealog']))
         threads.append(thread)
         thread.start()
     return threads
