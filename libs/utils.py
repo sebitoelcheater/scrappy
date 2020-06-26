@@ -37,9 +37,10 @@ def create_and_run_genealog_spider(ruts, collection):
     from libs.spiders.genealog_spider import GenealogSpider
     spider = GenealogSpider(ruts)
     for rut, data in spider.run():
-        collection.insert_one(
-            {'raw': data['data'], 'url': data['url'], '_id': rut}
-        )
+        if data is not None:
+            collection.insert_one(
+                {'raw': data['data'], 'url': data['url'], '_id': rut}
+            )
         print('genealog', rut, 'OK' if data is not None else 'NOT FOUND')
 
 

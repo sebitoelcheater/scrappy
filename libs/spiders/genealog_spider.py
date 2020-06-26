@@ -1,9 +1,12 @@
 import json
+import random
 import re
+import time
 from bs4 import BeautifulSoup
 from hammock import Hammock
+from js2py import eval_js
+from js2py.internals.simplex import JsException
 from libs.spider import Spider
-import js2py
 import base64
 
 with open('libs/mercantil.js', encoding='utf8') as file:
@@ -29,9 +32,18 @@ class GenealogSpider(Spider):
         data = json.loads(search.group(1))
         if data['content'] == []:
             return
-        return js2py.eval_js(
-            f"{javascript}setRegex({json.dumps(data['regex'])});getRutLink({json.dumps(data['content'])})"
-        )
+        eval_passed = False
+        evaluation = None
+        while not eval_passed:
+            try:
+                evaluation = eval_js(
+                    f"{javascript}setRegex({json.dumps(data['regex'])});getRutLink({json.dumps(data['content'])})"
+                )
+                eval_passed = True
+            except JsException:
+                time.sleep(1 + random.random())
+                pass
+        return evaluation
 
     def fetch_link(self, url):
         api = Hammock(url)
