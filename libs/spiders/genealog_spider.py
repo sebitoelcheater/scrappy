@@ -43,6 +43,9 @@ class GenealogSpider(Spider):
             except JsException:
                 time.sleep(1 + random.random())
                 pass
+            except RuntimeError:
+                time.sleep(1 + random.random())
+                pass
         return evaluation
 
     def fetch_link(self, url):
