@@ -33,9 +33,9 @@ def create_and_run_mercantil_spider(ids, db):
         print('mercantil', company_id, rut, 'OK' if data is not None else 'NOT FOUND')
 
 
-def create_and_run_genealog_spider(ruts, collection):
+def create_and_run_genealog_spider(ruts, collection, mutex):
     from libs.spiders.genealog_spider import GenealogSpider
-    spider = GenealogSpider(ruts)
+    spider = GenealogSpider(ruts, mutex)
     for rut, data in spider.run():
         if data is not None:
             collection.insert_one(

@@ -14,9 +14,10 @@ with open('libs/mercantil.js', encoding='utf8') as file:
 
 
 class GenealogSpider(Spider):
-    def __init__(self, ruts, *args, **kwargs):
+    def __init__(self, ruts, mutex, *args, **kwargs):
         super(GenealogSpider, self).__init__(*args, **kwargs)
         self.ruts = ruts
+        self.mutex = mutex
 
     def get_company_link(self, rut):
         api = Hammock('https://www.genealog.cl/Geneanexus/search')
@@ -32,20 +33,11 @@ class GenealogSpider(Spider):
         data = json.loads(search.group(1))
         if data['content'] == []:
             return
-        eval_passed = False
-        evaluation = None
-        while not eval_passed:
-            try:
-                evaluation = eval_js(
-                    f"{javascript}setRegex({json.dumps(data['regex'])});getRutLink({json.dumps(data['content'])})"
-                )
-                eval_passed = True
-            except JsException:
-                time.sleep(1 + random.random())
-                pass
-            except RuntimeError:
-                time.sleep(1 + random.random())
-                pass
+        self.mutex.acquire()
+        evaluation = eval_js(
+            f"{javascript}setRegex({json.dumps(data['regex'])});getRutLink({json.dumps(data['content'])})"
+        )
+        self.mutex.release()
         return evaluation
 
     def fetch_link(self, url):

@@ -1,5 +1,5 @@
 import platform
-from threading import Thread
+from threading import Thread, Lock
 from mongoengine import connect
 from pydash import py_ as _
 from libs.refiners.genealog_refiner import GenealogRefiner
@@ -44,10 +44,10 @@ def run_genealog_spiders(use_ruts_file=False):
                 yield line.replace('\n', '')
     if use_ruts_file:
         ruts_genealog = genealog_ruts()
-
+    mutex = Lock()
     for i in range(1):
         thread = Thread(target=create_and_run_genealog_spider,
-                        args=(ruts_genealog, connection[DB_NAME]['genealog']))
+                        args=(ruts_genealog, connection[DB_NAME]['genealog'], mutex))
         threads.append(thread)
         thread.start()
     return threads
