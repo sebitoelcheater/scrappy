@@ -1,6 +1,7 @@
 beautifulsoup4==4.8.0
 bs4==0.0.1
 hammock==0.2.4
+Js2Py==0.70
 lxml==4.4.0
 mongoengine==0.18.2
 numpy==1.17.0
