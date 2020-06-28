@@ -41,7 +41,9 @@ def run_genealog_spiders(use_ruts_file=False):
     def genealog_ruts():
         with open('fixtures/ruts.txt') as file:
             for line in file:
-                yield line.replace('\n', '')
+                rut = line.replace('\n', '')
+                if connection[DB_NAME]['genealog'].find_one({'_id': rut}) is None:
+                    yield line.replace('\n', '')
     if use_ruts_file:
         ruts_genealog = genealog_ruts()
     mutex = Lock()
