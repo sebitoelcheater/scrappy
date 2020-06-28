@@ -1,11 +1,9 @@
 import json
-import random
 import re
-import time
 from bs4 import BeautifulSoup
 from hammock import Hammock
-from js2py import eval_js
-from js2py.internals.simplex import JsException
+from py_mini_racer.py_mini_racer import MiniRacer
+from pydash import py_ as _
 from libs.spider import Spider
 import base64
 
@@ -33,11 +31,9 @@ class GenealogSpider(Spider):
         data = json.loads(search.group(1))
         if data['content'] == []:
             return
-        self.mutex.acquire()
-        evaluation = eval_js(
+        evaluation = MiniRacer().eval(
             f"{javascript}setRegex({json.dumps(data['regex'])});getRutLink({json.dumps(data['content'])})"
         )
-        self.mutex.release()
         return evaluation
 
     def fetch_link(self, url):
@@ -64,6 +60,11 @@ class GenealogSpider(Spider):
         raw = self.extract_information(soup)
         if raw is None:
             return None
+        rut_key = _.find(_.keys(raw), lambda k: 'RUT' in k)
+        if rut_key is None:
+            print(rut, 'NO RUT KEY FOUND')
+        if rut not in re.sub(r'\.*-*', '', raw[rut_key]):
+            print(rut, 'RUT DOES NOT MATCH')
         return {'data': {**raw, **raw_decoded}, 'source': 'genealog', 'url': url}
 
     def extract_information(self, soup):
