@@ -67,18 +67,15 @@ def run_mercantil_spiders():
 
 
 def run_genealog_refiner():
-    for company in connection[DB_NAME]['sii_companies'].find({
-        'raws.genealog': {'$exists': True, '$ne': None},
-        'raws.genealog.refined': {'$exists': False}
+    for genealog_record in connection[DB_NAME]['genealog'].find({
+        'raw': {'$exists': True, '$ne': None},
+        'parsed': {'$exists': False}
     }):
-        contacts = _.get(company, 'contacts', [])
-        parsed = GenealogRefiner(company).run()
-        if parsed and 'contacts' in parsed:
-            for contact in parsed['contacts']:
-                contacts.append(contact)
-            connection[DB_NAME]['sii_companies'].update_one(
-                {'_id': company['_id']},
-                {'$set': {'contacts': _.uniq_by(contacts, ['name', 'emails'])}}
+        parsed = GenealogRefiner(genealog_record['raw']).run()
+        if parsed is not None:
+            connection[DB_NAME]['genealog'].update_one(
+                {'_id': genealog_record['_id']},
+                {'$set': {'parsed': parsed}}
             )
 
 
