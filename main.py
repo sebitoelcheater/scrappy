@@ -123,5 +123,7 @@ def run_spiders():
 
 if __name__ == '__main__':
     # run_genealog_refiner()
-    run_spiders()
+    run_mercantil_refiner()
+    run_genealog_refiner()
+    # run_spiders()
     # print_contacts()
