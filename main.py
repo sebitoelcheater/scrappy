@@ -80,18 +80,15 @@ def run_genealog_refiner():
 
 
 def run_mercantil_refiner():
-    for company in connection[DB_NAME]['sii_companies'].find({
-        'raws.mercantil': {'$exists': True, '$ne': None},
-        'raws.mercantil.refined': {'$exists': False}
+    for mercantil_record in connection[DB_NAME]['mercantil'].find({
+        'raw': {'$exists': True, '$ne': None},
+        'parsed': {'$exists': False}
     }):
-        contacts = _.get(company, 'contacts', [])
-        parsed = MercantilRefiner(company).run()
-        if parsed and 'contacts' in parsed:
-            for contact in parsed['contacts']:
-                contacts.append(contact)
-            connection[DB_NAME]['sii_companies'].update_one(
-                {'_id': company['_id']},
-                {'$set': {'contacts': _.uniq_by(contacts, ['name', 'emails'])}}
+        parsed = MercantilRefiner(mercantil_record['raw']).run()
+        if parsed is not None:
+            connection[DB_NAME]['mercantil'].update_one(
+                {'_id': mercantil_record['_id']},
+                {'$set': {'parsed': parsed}}
             )
 
 
