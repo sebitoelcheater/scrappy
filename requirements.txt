@@ -3,7 +3,7 @@ bs4==0.0.1
 hammock==0.2.4
 lxml==4.4.0
 mongoengine==0.18.2
-numpy==1.17.0
+numpy==1.22.0
 pandas==0.25.0
 py-mini-racer==0.2.0
 pydash==4.7.6
